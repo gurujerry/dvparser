@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-#import csv
 import random
 import time
 import re
@@ -9,16 +8,26 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 ''' A re-write of big list using element[x].parent.text '''
 ## Variables to edit:
-justTest = False #Boolean so we can quickly turn on testing mode
+#Boolean to turn on testing mode
+justTest = False ; maxTest = 10
 useProxy = True
-filterRating = True #Remove low rated beers
-minRating = 4.2
+#Compares to previous CSV to reduce page lookups
+compareCSV = False ; oldCSV = '/path/to/oldfile.csv'
+ #Remove low ratings
+filterRating = True ; minRating = 4.2
 sleepMin = 2; sleepMax = 5  #1,2
-#Regex remove basic beers ^"(3.*|4\.[0-1].*)\n  OR Better: ^"([1-3]|(4("|\.[0-1]))).*\n
+#Old Regex to remove low ratings: ^"(3.*|4\.[0-1].*)\n  OR Better: ^"([1-3]|(4("|\.[0-1]))).*\n
 
 proxies = {
   "http": "http://12.69.91.226:80"
 }
+
+def parseCSV(filepath):
+    with open(filepath, mode='r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        csvList = list(reader)
+    return csvList
+
 
 #url = 'http://ifconfig.me' #Gets IP
 def get_data_from_ut(url, useProxy = False):
@@ -43,10 +52,7 @@ html_doc = BeautifulSoup(gmail, 'html.parser')
 allLinks = html_doc.findAll('a') #len(allLinks) 308
 ## TEST written this way because parent.link can be duplicated and parent.string can be 3 different edge cases
 def parseLink(linkDescription):
-    linkDescription = linkDescription.strip('\n') #allLinks[306].parent.text.strip('\n')
-    # matchObj = re.match( r'(.*)( - limit.*?) .*', allLinks[13].parent.text, re.M|re.I)
-    # matchObj.group(1)
-    #matchLimit = re.match( r'(.*)( - limit.*?) .*', allLinks[13].parent.text, re.M|re.I)
+    linkDescription = linkDescription.strip('\n')
     ## Is the regex end of line and group 2 below necessary/wrong?
     matchLimit = re.match( r'(.*)( - limit.*?) .*', linkDescription, re.M|re.I) #remove ' - limit.*
     matchIce = re.match( r'(.*)( - .*ice.?pack.*?) .*', linkDescription, re.M|re.I) #was picky
@@ -74,7 +80,7 @@ for link in allLinks:
     elem = total - 1
     print(f"Element number {elem} / {allElems}")
     #print(parseLink(link.parent.text))
-    if justTest and total > 10:
+    if justTest and total > maxTest:
         print("Stopping Processing")
         break
     ## TODO: pass this to Function parse
@@ -93,12 +99,24 @@ for link in allLinks:
     beername = beerEmailDescription.group(1)
     formattedBeername = beername.strip()
     price = beerEmailDescription.group(3)
+    if compareCSV:
+        import csv #Move this to beginning if we ever output as CSV
+        oldCSVList = parseCSV(oldCSV)
+        #NameList = [row["Beer Name"] for row in oldCSVList]
+        # Each Element in oldCSVList[] is an OrderedDict 
+        for elem in oldCSVList:
+            if elem.get('Beer Name') == formattedBeername:
+                # TODO: Do stuff here like return CSV values and skip Web lookup 
+                pass
+            #for key, value in elem.items():
+            #    print(f'key: {key} value: {value}')
     time.sleep(random.uniform(sleepMin, sleepMax)) ## Throttle between requests, uniform vs randint for floating numbers
     #resp = get_data_from_ut(link['href'])  # not itemList[0]
     if useProxy:
         resp = get_data_from_ut(link['href'], useProxy = True)
     else:
         resp = get_data_from_ut(link['href'])
+    #? Replace with resp.raise_for_status()
     if resp.status_code != 200:
         print("No 200 error")
         break
@@ -114,10 +132,8 @@ for link in allLinks:
     itemList.append([formattedRating, formattedBeername, price, formattedAbv, resp.url, style, formattedRaters])
     columnList.append(itemList)
 
-# TODO: compare previous CSV with current list and only run on new content
-
-print('"Rating","Beer Name","Price","Abv","URL","Style","Ratings"')
 # Print to screen Excel Friendly "0","1". TODO: Add CSV file output (docker challenges)
+totalNewCSVRows = 0
 for columns in columnList:
     if filterRating:
         #print(f"Testing {columns[0]}")
@@ -132,5 +148,8 @@ for columns in columnList:
         ## I hated the ugly regex below and replaced with float comparrison above
         #if re.match( r'^([0-3]|(4($|\.[0-1]))).*$', columns[0][0] ):
         #    continue
+    if totalNewCSVRows == 0:
+        print('"Rating","Beer Name","Price","Abv","URL","Style","Ratings"')
     c = columns[0]
     print(f'"{c[0]}","{c[1]}","{c[2]}","{c[3]}","{c[4]}","{c[5]}","{c[6]}"')
+    totalNewCSVRows += 1
