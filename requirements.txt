@@ -1,0 +1,10 @@
+# Library dependencies for the python code.  You need to install these with
+# `pip install -r requirements.txt` before you can run this.
+
+requests
+bs4
+#csv
+# These may be installed by default
+#random
+#time
+#re
