@@ -13,7 +13,7 @@ justTest = False ; maxTest = 10
 useProxy = True
 #Compares to previous CSV to reduce page lookups
 compareCSV = False ; oldCSV = '/path/to/oldfile.csv'
- #Remove low ratings
+#Remove low ratings
 filterRating = True ; minRating = 4.2
 sleepMin = 2; sleepMax = 5  #1,2
 #Old Regex to remove low ratings: ^"(3.*|4\.[0-1].*)\n  OR Better: ^"([1-3]|(4("|\.[0-1]))).*\n
@@ -21,6 +21,10 @@ sleepMin = 2; sleepMax = 5  #1,2
 proxies = {
   "http": "http://12.69.91.226:80"
 }
+
+if compareCSV:
+    import csv #Move this to beginning if we ever output as CSV
+
 
 def parseCSV(filepath):
     with open(filepath, mode='r') as csvfile:
@@ -47,13 +51,10 @@ def get_data_from_ut(url, useProxy = False):
         exit(1)
 
 
-## Get all the email links and their parents
-html_doc = BeautifulSoup(gmail, 'html.parser')
-allLinks = html_doc.findAll('a') #len(allLinks) 308
-## TEST written this way because parent.link can be duplicated and parent.string can be 3 different edge cases
 def parseLink(linkDescription):
     linkDescription = linkDescription.strip('\n')
     ## Is the regex end of line and group 2 below necessary/wrong?
+    ## TODO: Add new case like "$1.00 - 1 left"
     matchLimit = re.match( r'(.*)( - limit.*?) .*', linkDescription, re.M|re.I) #remove ' - limit.*
     matchIce = re.match( r'(.*)( - .*ice.?pack.*?) .*', linkDescription, re.M|re.I) #was picky
     if matchLimit:
@@ -71,11 +72,15 @@ def parseLink(linkDescription):
     return linkDescription
 
 
+## Get all the email links and their parents, written this way because parent.link 
+##   can be duplicated and parent.string can be 3 different edge cases
+html_doc = BeautifulSoup(gmail, 'html.parser')
+allLinks = html_doc.findAll('a') #len(allLinks) 308
 allElems = len(allLinks) - 1
-linkTextList = []; columnList = []; total = 0; beername = ""
+linkTextList = []; columnList = []; total = 0; beername = ""; foundInCSV = 0
 #for link in allLinks[195:315]:  #debugging
 for link in allLinks:
-    itemList = []
+    itemList = []; csvAddedRecord = False
     total += 1
     elem = total - 1
     print(f"Element number {elem} / {allElems}")
@@ -92,7 +97,7 @@ for link in allLinks:
         #print(link.parent.text)
     checkGoodLink = parseLink(link.parent.text)
     if checkGoodLink == "Bad Link":
-        print("Bad Link, skipping")
+        print("     Bad Link, skipping")
         continue
     # Making spaces optional (?) because DV sucks at formatting
     beerEmailDescription = re.match( r'(.*)( ?- ?)(.*)', checkGoodLink, re.M|re.I)
@@ -100,14 +105,28 @@ for link in allLinks:
     formattedBeername = beername.strip()
     price = beerEmailDescription.group(3)
     if compareCSV:
-        import csv #Move this to beginning if we ever output as CSV
         oldCSVList = parseCSV(oldCSV)
         #NameList = [row["Beer Name"] for row in oldCSVList]
-        # Each Element in oldCSVList[] is an OrderedDict 
+        # Each Element in oldCSVList[] is an OrderedDict
         for elem in oldCSVList:
             if elem.get('Beer Name') == formattedBeername:
-                # TODO: Do stuff here like return CSV values and skip Web lookup 
-                pass
+                print(f'   Name match {formattedBeername}')
+                #TODO: Add price comparisson/update logic
+                #if elem.get('Price') == price:
+                #    print(f'Price Match')
+                foundInCSV += 1
+                csvRating = elem.get('Rating')
+                csvName = elem.get('Beer Name')
+                csvPrice = elem.get('Price')
+                csvABV = elem.get('Abv')
+                csvURL = elem.get('URL')
+                csvStyle = elem.get('Style')
+                csvRatings = elem.get('Ratings')
+                itemList.append([csvRating, csvName, csvPrice, csvABV, csvURL, csvStyle, csvRatings])
+                columnList.append(itemList)
+                csvAddedRecord = True
+        if csvAddedRecord: #TODO: there's probably a better way continue an outer nested for loop
+            continue
             #for key, value in elem.items():
             #    print(f'key: {key} value: {value}')
     time.sleep(random.uniform(sleepMin, sleepMax)) ## Throttle between requests, uniform vs randint for floating numbers
