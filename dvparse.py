@@ -22,9 +22,6 @@ proxies = {
   "http": "http://12.69.91.226:80"
 }
 
-if compareCSV:
-    import csv #Move this to beginning if we ever output as CSV
-
 
 def parseCSV(filepath):
     with open(filepath, mode='r') as csvfile:
@@ -56,12 +53,16 @@ def parseLink(linkDescription):
     ## Is the regex end of line and group 2 below necessary/wrong?
     ## TODO: Add new case like "$1.00 - 1 left"
     matchLimit = re.match( r'(.*)( - limit.*?) .*', linkDescription, re.M|re.I) #remove ' - limit.*
+    matchLeft = re.match( r'(.*)( - [0-9]+ left.*?).*', linkDescription, re.M|re.I) #remove ' - left.*
     matchIce = re.match( r'(.*)( - .*ice.?pack.*?) .*', linkDescription, re.M|re.I) #was picky
     if matchLimit:
-        print("Found regex")
+        print("Found regex Limit")
         linkDescription = matchLimit.group(1)
+    if matchLeft:
+        print("Found regex Left")
+        linkDescription = matchLeft.group(1)
     if matchIce:
-        print("Found regex")
+        print("Found regex Ice")
         linkDescription = matchIce.group(1)
     if '$' not in linkDescription:
         #linkDescription = False #TypeError: argument of type 'bool' is not iterable
@@ -72,12 +73,16 @@ def parseLink(linkDescription):
     return linkDescription
 
 
+if compareCSV:
+    import csv #Move import to beginning if we ever output as CSV
+    oldCSVList = parseCSV(oldCSV)
+
 ## Get all the email links and their parents, written this way because parent.link 
 ##   can be duplicated and parent.string can be 3 different edge cases
 html_doc = BeautifulSoup(gmail, 'html.parser')
 allLinks = html_doc.findAll('a') #len(allLinks) 308
 allElems = len(allLinks) - 1
-linkTextList = []; columnList = []; total = 0; beername = ""; foundInCSV = 0
+linkTextList = []; columnList = []; total = 0; beername = ""; foundInCSV = 0; foundPriceInCSV = 0
 #for link in allLinks[195:315]:  #debugging
 for link in allLinks:
     itemList = []; csvAddedRecord = False
@@ -104,16 +109,13 @@ for link in allLinks:
     beername = beerEmailDescription.group(1)
     formattedBeername = beername.strip()
     price = beerEmailDescription.group(3)
+    formattedPrice = price.strip()
     if compareCSV:
-        oldCSVList = parseCSV(oldCSV)
         #NameList = [row["Beer Name"] for row in oldCSVList]
         # Each Element in oldCSVList[] is an OrderedDict
         for elem in oldCSVList:
             if elem.get('Beer Name') == formattedBeername:
                 print(f'   Name match {formattedBeername}')
-                #TODO: Add price comparisson/update logic
-                #if elem.get('Price') == price:
-                #    print(f'Price Match')
                 foundInCSV += 1
                 csvRating = elem.get('Rating')
                 csvName = elem.get('Beer Name')
@@ -122,7 +124,12 @@ for link in allLinks:
                 csvURL = elem.get('URL')
                 csvStyle = elem.get('Style')
                 csvRatings = elem.get('Ratings')
-                itemList.append([csvRating, csvName, csvPrice, csvABV, csvURL, csvStyle, csvRatings])
+                if formattedPrice == csvPrice:
+                    foundPriceInCSV += 1
+                    itemList.append([csvRating, csvName, csvPrice, csvABV, csvURL, csvStyle, csvRatings])
+                else:
+                    print(f'          Price difference email: {formattedPrice} csv: {csvPrice}')
+                    itemList.append([csvRating, csvName, formattedPrice, csvABV, csvURL, csvStyle, csvRatings])
                 columnList.append(itemList)
                 csvAddedRecord = True
         if csvAddedRecord: #TODO: there's probably a better way continue an outer nested for loop
@@ -148,7 +155,7 @@ for link in allLinks:
     formattedRaters = raters.strip('\nRatings ')
     style = resp_doc.find("p", {"class": "style"}).text
     # Put CSV: Rating, Name, Price, Abv, URL
-    itemList.append([formattedRating, formattedBeername, price, formattedAbv, resp.url, style, formattedRaters])
+    itemList.append([formattedRating, formattedBeername, formattedPrice, formattedAbv, resp.url, style, formattedRaters])
     columnList.append(itemList)
 
 # Print to screen Excel Friendly "0","1". TODO: Add CSV file output (docker challenges)
