@@ -82,7 +82,8 @@ if compareCSV:
 html_doc = BeautifulSoup(gmail, 'html.parser')
 allLinks = html_doc.findAll('a') #len(allLinks) 308
 allElems = len(allLinks) - 1
-linkTextList = []; columnList = []; total = 0; beername = ""; foundInCSV = 0; foundPriceInCSV = 0
+linkTextList = []; columnList = []; total = 0; beername = ""
+foundInCSV = foundPriceInCSV = 0
 #for link in allLinks[195:315]:  #debugging
 for link in allLinks:
     itemList = []; csvAddedRecord = False
@@ -126,10 +127,10 @@ for link in allLinks:
                 csvRatings = elem.get('Ratings')
                 if formattedPrice == csvPrice:
                     foundPriceInCSV += 1
-                    itemList.append([csvRating, csvName, csvPrice, csvABV, csvURL, csvStyle, csvRatings])
+                    itemList = [csvRating, csvName, csvPrice, csvABV, csvURL, csvStyle, csvRatings]
                 else:
                     print(f'          Price difference email: {formattedPrice} csv: {csvPrice}')
-                    itemList.append([csvRating, csvName, formattedPrice, csvABV, csvURL, csvStyle, csvRatings])
+                    itemList = [csvRating, csvName, formattedPrice, csvABV, csvURL, csvStyle, csvRatings]
                 columnList.append(itemList)
                 csvAddedRecord = True
         if csvAddedRecord: #TODO: there's probably a better way continue an outer nested for loop
@@ -155,12 +156,12 @@ for link in allLinks:
     formattedRaters = raters.strip('\nRatings ')
     style = resp_doc.find("p", {"class": "style"}).text
     # Put CSV: Rating, Name, Price, Abv, URL
-    itemList.append([formattedRating, formattedBeername, formattedPrice, formattedAbv, resp.url, style, formattedRaters])
+    itemList = [formattedRating, formattedBeername, formattedPrice, formattedAbv, resp.url, style, formattedRaters]
     columnList.append(itemList)
 
 # Print to screen Excel Friendly "0","1". TODO: Add CSV file output (docker challenges)
 totalNewCSVRows = 0
-for columns in columnList:
+for c in columnList:
     if filterRating:
         #print(f"Testing {columns[0]}")
         try:
@@ -176,6 +177,5 @@ for columns in columnList:
         #    continue
     if totalNewCSVRows == 0:
         print('"Rating","Beer Name","Price","Abv","URL","Style","Ratings"')
-    c = columns[0]
     print(f'"{c[0]}","{c[1]}","{c[2]}","{c[3]}","{c[4]}","{c[5]}","{c[6]}"')
     totalNewCSVRows += 1
