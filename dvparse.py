@@ -15,6 +15,7 @@ useProxy = True
 compareCSV = False ; oldCSV = '/path/to/oldfile.csv'
 #Remove low ratings
 filterRating = True ; minRating = 4.2
+outputCSV = True ; newCSV = '/path/to/new.csv' ; filteredCSV = '/path/to/newFiltered.csv'
 sleepMin = 2; sleepMax = 5  #1,2
 #Old Regex to remove low ratings: ^"(3.*|4\.[0-1].*)\n  OR Better: ^"([1-3]|(4("|\.[0-1]))).*\n
 
@@ -28,6 +29,23 @@ def parseCSV(filepath):
         reader = csv.DictReader(csvfile)
         csvList = list(reader)
     return csvList
+
+
+def writeCSV(writeFile, rowList, filterRating = False):
+    with open(writeFile, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
+        writer.writerow(['Rating','Beer Name','Price','Abv','URL','Style','Ratings'])
+        if filterRating:
+            for row in rowList:
+                try:
+                    rating = float(row[0])
+                    if rating < minRating:
+                        continue
+                except ValueError:
+                    pass
+                writer.writerow(row)
+        else:
+            writer.writerows(columnList)
 
 
 #url = 'http://ifconfig.me' #Gets IP
@@ -73,8 +91,10 @@ def parseLink(linkDescription):
     return linkDescription
 
 
+if compareCSV or outputCSV:
+    import csv
+
 if compareCSV:
-    import csv #Move import to beginning if we ever output as CSV
     oldCSVList = parseCSV(oldCSV)
 
 ## Get all the email links and their parents, written this way because parent.link 
@@ -159,23 +179,28 @@ for link in allLinks:
     itemList = [formattedRating, formattedBeername, formattedPrice, formattedAbv, resp.url, style, formattedRaters]
     columnList.append(itemList)
 
-# Print to screen Excel Friendly "0","1". TODO: Add CSV file output (docker challenges)
+# Print to screen Excel Friendly "0","1"
 totalNewCSVRows = 0
 for c in columnList:
     if filterRating:
-        #print(f"Testing {columns[0]}")
+        #print(f"Testing {c[0]}")
         try:
-            rating = float(columns[0][0])
+            rating = float(c[0])
             if rating < minRating:
                 #print("      Basic AF")
                 continue
         except ValueError:
             pass
-            #print(f"    Can't convert to float {columns[0][0]}")
+            #print(f"    Can't convert to float {c[0]}")
         ## I hated the ugly regex below and replaced with float comparrison above
-        #if re.match( r'^([0-3]|(4($|\.[0-1]))).*$', columns[0][0] ):
+        #if re.match( r'^([0-3]|(4($|\.[0-1]))).*$', c[0] ):
         #    continue
     if totalNewCSVRows == 0:
         print('"Rating","Beer Name","Price","Abv","URL","Style","Ratings"')
     print(f'"{c[0]}","{c[1]}","{c[2]}","{c[3]}","{c[4]}","{c[5]}","{c[6]}"')
     totalNewCSVRows += 1
+
+if outputCSV:
+    writeCSV(newCSV, columnList)
+    if filterRating:
+        writeCSV(filteredCSV, columnList, filterRating = True)
