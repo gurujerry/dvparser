@@ -95,6 +95,9 @@ if compareCSV or outputCSV:
     import csv
 
 if compareCSV:
+    import os.path
+    if not os.path.exists(oldCSV):
+        raise Exception(f'File not exist: {oldCSV}')
     oldCSVList = parseCSV(oldCSV)
 
 # Get all email links and their parents, written this way because parent.link
