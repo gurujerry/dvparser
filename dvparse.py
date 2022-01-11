@@ -15,9 +15,10 @@ useProxy = True
 compareCSV = False; oldCSV = '/path/to/oldfile.csv'
 # Remove low ratings
 filterRating = True; minRating = 4.2
-outputCSV = True; newCSV = '/path/to/new.csv'; filteredCSV = '/path/to/newFiltered.csv'
+outputCSV = True; newCSV = '/path/to/new.csv'; filteredCSV = '/path/to/new-Filtered.csv'
+printRows = False
 sleepMin = 2; sleepMax = 5
-# Old Regex to remove low ratings: ^"(3.*|4\.[0-1].*)\n  OR Better: ^"([1-3]|(4("|\.[0-1]))).*\n
+# Old remove low ratings Regex: ^"([1-3]|(4("|\.[0-1]))).*\n
 
 proxies = {
   "http": "http://12.69.91.226:80"
@@ -69,7 +70,6 @@ def get_data_from_ut(url, useProxy=False):
 def parseLink(linkDescription):
     linkDescription = linkDescription.strip('\n')
     # Is the regex end of line and group 2 below necessary/wrong?
-    # TODO: Add new case like "$1.00 - 1 left"
     matchLimit = re.match(r'(.*)( - limit.*?) .*', linkDescription, re.M | re.I)  # remove ' - limit.*
     matchLeft = re.match(r'(.*)( - [0-9]+ left.*?).*', linkDescription, re.M | re.I)  # remove ' - left.*
     matchIce = re.match(r'(.*)( - .*ice.?pack.*?) .*', linkDescription, re.M | re.I)  # was picky
@@ -164,7 +164,7 @@ for link in allLinks:
             continue
             #for key, value in elem.items():
             #    print(f'key: {key} value: {value}')
-    time.sleep(random.uniform(sleepMin, sleepMax))  # Throttle between requests, uniform vs randint for floating numbers
+    time.sleep(random.uniform(sleepMin, sleepMax))  # Throttle requests, uniform vs randint for floating numbers
     #resp = get_data_from_ut(link['href'])  # not itemList[0]
     if useProxy:
         resp = get_data_from_ut(link['href'], useProxy=True)
@@ -182,32 +182,34 @@ for link in allLinks:
     raters = resp_doc.find("p", {"class": "raters"}).text
     formattedRaters = raters.strip('\nRatings ')
     style = resp_doc.find("p", {"class": "style"}).text
-    # Put CSV: Rating, Name, Price, Abv, URL
+    # Put CSV: Rating, Name, Price, Abv, URL, Style, Ratings Count
     itemList = [formattedRating, formattedBeername, formattedPrice, formattedAbv, resp.url, style, formattedRaters]
     columnList.append(itemList)
 
-# Print to screen Excel Friendly "0","1"
-totalNewCSVRows = 0
+totalNewCSVRows = 0; filteredRows = 0
 for c in columnList:
     if filterRating:
         #print(f"Testing {c[0]}")
         try:
             rating = float(c[0])
             if rating < minRating:
-                #print("      Basic AF")
+                filteredRows += 1
                 continue
         except ValueError:
             pass
             #print(f"    Can't convert to float {c[0]}")
         # I hated the ugly regex below and replaced with float comparison above
         #if re.match( r'^([0-3]|(4($|\.[0-1]))).*$', c[0] ):
-        #    continue
-    if totalNewCSVRows == 0:
-        print('"Rating","Beer Name","Price","Abv","URL","Style","Ratings"')
-    print(f'"{c[0]}","{c[1]}","{c[2]}","{c[3]}","{c[4]}","{c[5]}","{c[6]}"')
+    if printRows:
+        if totalNewCSVRows == 0:
+            print('"Rating","Beer Name","Price","Abv","URL","Style","Ratings"')
+        print(f'"{c[0]}","{c[1]}","{c[2]}","{c[3]}","{c[4]}","{c[5]}","{c[6]}"')
     totalNewCSVRows += 1
 
 if outputCSV:
     writeCSV(newCSV, columnList)
     if filterRating:
         writeCSV(filteredCSV, columnList, filterRating=True)
+
+print(f'Found in Previous CSV. Name: {foundInCSV} Price: {foundPriceInCSV} N/A Rating: {foundNAInCSV} '
+      f'Total Rows: {totalNewCSVRows} Filtered: {filteredRows}')
