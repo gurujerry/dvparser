@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import random
 import time
 import re
+from gmail import email  # A local gmail.py with email variable of email text
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -102,11 +103,11 @@ if compareCSV:
 
 # Get all email links and their parents, written this way because parent.link
 #   can be duplicated and parent.string can be 3 different edge cases
-html_doc = BeautifulSoup(gmail, 'html.parser')
+html_doc = BeautifulSoup(email, 'html.parser')
 allLinks = html_doc.findAll('a')  # len(allLinks) 308
 allElems = len(allLinks) - 1
 linkTextList = []; columnList = []; total = 0; beername = ""
-foundInCSV = foundNAInCSV = foundPriceInCSV = 0
+foundInCSV = foundNAInCSV = foundPriceInCSV = webRequests = 0
 #for link in allLinks[195:315]:  #debugging
 for link in allLinks:
     itemList = []; csvAddedRecord = False
@@ -170,6 +171,7 @@ for link in allLinks:
         resp = get_data_from_ut(link['href'], useProxy=True)
     else:
         resp = get_data_from_ut(link['href'])
+    webRequests += 1
     #? Replace with resp.raise_for_status()
     if resp.status_code != 200:
         print("No 200 error")
@@ -186,7 +188,7 @@ for link in allLinks:
     itemList = [formattedRating, formattedBeername, formattedPrice, formattedAbv, resp.url, style, formattedRaters]
     columnList.append(itemList)
 
-totalNewCSVRows = 0; filteredRows = 0
+totalNewCSVRows = filteredRows = 0
 for c in columnList:
     if filterRating:
         #print(f"Testing {c[0]}")
@@ -211,5 +213,6 @@ if outputCSV:
     if filterRating:
         writeCSV(filteredCSV, columnList, filterRating=True)
 
-print(f'Found in Previous CSV. Name: {foundInCSV} Price: {foundPriceInCSV} N/A Rating: {foundNAInCSV} '
-      f'Total Rows: {totalNewCSVRows} Filtered: {filteredRows}')
+print(f'Found in Previous CSV:')
+print(f'   Name: {foundInCSV} Price: {foundPriceInCSV} N/A Rating: {foundNAInCSV} ')
+print(f'Total: Rows: {len(columnList)} Filtered: {filteredRows} Web Calls: {webRequests}')
