@@ -120,7 +120,7 @@ for link in allLinks:
         break
     # TODO: pass this to Function parse
     if link.parent.text in linkTextList:  # Check for dupe links?
-        print(f"     Got a dupe link {link.parent.text}")
+        print(f"    Got a dupe link: {link.parent.text.strip()}")
         continue
     else:
         linkTextList.append(link.parent.text,)
@@ -145,7 +145,7 @@ for link in allLinks:
                 csvRating = elem.get('Rating')
                 if csvRating == 'N/A':
                     foundNAInCSV += 1
-                    print(f'          No CSV rating, looking up')
+                    print(f'        No CSV rating, looking up')
                     continue
                 csvName = elem.get('Beer Name')
                 csvPrice = elem.get('Price')
@@ -157,7 +157,7 @@ for link in allLinks:
                     foundPriceInCSV += 1
                     itemList = [csvRating, csvName, csvPrice, csvABV, csvURL, csvStyle, csvRatings]
                 else:
-                    print(f'          Price difference email: {formattedPrice} csv: {csvPrice}')
+                    print(f'        Price difference email: {formattedPrice} csv: {csvPrice}')
                     itemList = [csvRating, csvName, formattedPrice, csvABV, csvURL, csvStyle, csvRatings]
                 columnList.append(itemList)
                 csvAddedRecord = True
