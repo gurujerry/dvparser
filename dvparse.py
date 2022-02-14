@@ -134,15 +134,15 @@ for link in allLinks:
     # Spaces optional (?) because DV sucks at formatting
     beerEmailDescription = re.match(r'(.*)( ?- ?)(.*)', checkGoodLink, re.M | re.I)
     beername = beerEmailDescription.group(1)
-    formattedBeername = beername.strip()
+    formatBeername = beername.strip()
     price = beerEmailDescription.group(3)
-    formattedPrice = price.strip()
+    formatPrice = price.strip()
     if compareCSV:
         #NameList = [row["Beer Name"] for row in oldCSVList]
         # Each Element in oldCSVList[] is an OrderedDict
         for elem in oldCSVList:
-            if elem.get('Beer Name') == formattedBeername:
-                print(f'   Name match {formattedBeername}')
+            if elem.get('Beer Name') == formatBeername:
+                print(f'   Name match {formatBeername}')
                 foundInCSV += 1
                 csvRating = elem.get('Rating')
                 if csvRating == 'N/A':
@@ -155,12 +155,12 @@ for link in allLinks:
                 csvURL = elem.get('URL')
                 csvStyle = elem.get('Style')
                 csvRatings = elem.get('Ratings')
-                if formattedPrice == csvPrice:
+                if formatPrice == csvPrice:
                     foundPriceInCSV += 1
                     itemList = [csvRating, csvName, csvPrice, csvABV, csvURL, csvStyle, csvRatings]
                 else:
-                    print(f'        Price difference email: {formattedPrice} csv: {csvPrice}')
-                    itemList = [csvRating, csvName, formattedPrice, csvABV, csvURL, csvStyle, csvRatings]
+                    print(f'        Price difference email: {formatPrice} csv: {csvPrice}')
+                    itemList = [csvRating, csvName, formatPrice, csvABV, csvURL, csvStyle, csvRatings]
                 columnList.append(itemList)
                 csvAddedRecord = True
         if csvAddedRecord:  # TODO: probably a better way continue an outer nested for loop
@@ -180,14 +180,15 @@ for link in allLinks:
         break
     resp_doc = BeautifulSoup(resp.text, 'html.parser')
     rating = resp_doc.find("span", {"class": "num"}).text  # '(4.67)'
-    formattedRating = rating.strip('()')
+    formatRating = rating.strip('()')
     abv = resp_doc.find("p", {"class": "abv"}).text
-    formattedAbv = abv.strip('\nABV ')
+    formatAbv = abv.strip('\nABV ')
     raters = resp_doc.find("p", {"class": "raters"}).text
-    formattedRaters = raters.strip('\nRatings ')
+    formatRaters = raters.strip('\nRatings ')
     style = resp_doc.find("p", {"class": "style"}).text
     # Put CSV: Rating, Name, Price, Abv, URL, Style, Ratings Count
-    itemList = [formattedRating, formattedBeername, formattedPrice, formattedAbv, resp.url, style, formattedRaters]
+    itemList = [formatRating, formatBeername, formatPrice, formatAbv, resp.url, style, formatRaters]
+    print(f'   New: Name: {formatBeername} Rating: {formatRating}')
     columnList.append(itemList)
 
 totalNewCSVRows = filteredRows = 0
