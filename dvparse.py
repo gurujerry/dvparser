@@ -9,14 +9,16 @@ from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 ''' A re-write of big list using element[x].parent.text '''
 ## Variables to edit:
+gmaildate = "0210"  # Date of newest email
+basedir = "/root/"
 # Boolean to turn on testing mode
 justTest = False; maxTest = 10
 useProxy = True
 # Compares to previous CSV to reduce page lookups
-compareCSV = False; oldCSV = '/path/to/oldfile.csv'
+compareCSV = False; oldCSV = f'{basedir}oldfile.csv'
 # Remove low ratings
 filterRating = True; minRating = 4.2
-outputCSV = True; newCSV = '/path/to/new.csv'; filteredCSV = '/path/to/new-Filtered.csv'
+outputCSV = True; newCSV = f'{basedir}{gmaildate}.csv'; filteredCSV = f'{basedir}{gmaildate}-filtered.csv'
 printRows = False
 sleepMin = 2; sleepMax = 5
 # Old remove low ratings Regex: ^"([1-3]|(4("|\.[0-1]))).*\n
@@ -75,13 +77,13 @@ def parseLink(linkDescription):
     matchLeft = re.match(r'(.*)( - [0-9]+ left.*?).*', linkDescription, re.M | re.I)  # remove ' - left.*
     matchIce = re.match(r'(.*)( - .*ice.?pack.*?) .*', linkDescription, re.M | re.I)  # was picky
     if matchLimit:
-        print("Found regex Limit")
+        print("   Found regex Limit")
         linkDescription = matchLimit.group(1)
     if matchLeft:
-        print("Found regex Left")
+        print("   Found regex Left")
         linkDescription = matchLeft.group(1)
     if matchIce:
-        print("Found regex Ice")
+        print("   Found regex Ice")
         linkDescription = matchIce.group(1)
     if '$' not in linkDescription:
         #linkDescription = False #TypeError: argument of type 'bool' is not iterable
