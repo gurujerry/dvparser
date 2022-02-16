@@ -7,7 +7,7 @@ from gmail import email  # A local gmail.py with email variable of email text
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-''' A re-write of big list using element[x].parent.text '''
+""" A re-write of big list using element[x].parent.text """
 ## Variables to edit:
 gmaildate = "0210"  # Date of newest email
 basedir = "/root/"
@@ -15,10 +15,10 @@ basedir = "/root/"
 justTest = False; maxTest = 10
 useProxy = True
 # Compares to previous CSV to reduce page lookups
-compareCSV = False; oldCSV = f'{basedir}oldfile.csv'
+compareCSV = False; oldCSV = f"{basedir}oldfile.csv"
 # Remove low ratings
 filterRating = True; minRating = 4.2
-outputCSV = True; newCSV = f'{basedir}{gmaildate}.csv'; filteredCSV = f'{basedir}{gmaildate}-filtered.csv'
+outputCSV = True; newCSV = f"{basedir}{gmaildate}.csv"; filteredCSV = f"{basedir}{gmaildate}-filtered.csv"
 printRows = False
 sleepMin = 2; sleepMax = 5
 # Old remove low ratings Regex: ^"([1-3]|(4("|\.[0-1]))).*\n
@@ -29,16 +29,16 @@ proxies = {
 
 
 def parseCSV(filepath):
-    with open(filepath, mode='r') as csvfile:
+    with open(filepath, mode="r") as csvfile:
         reader = csv.DictReader(csvfile)
         csvList = list(reader)
     return csvList
 
 
 def writeCSV(writeFile, rowList, filterRating=False):
-    with open(writeFile, 'w', newline='') as csvfile:
+    with open(writeFile, "w", newline="") as csvfile:
         writer = csv.writer(csvfile, quoting=csv.QUOTE_ALL)
-        writer.writerow(['Rating', 'Beer Name', 'Price', 'Abv', 'URL', 'Style', 'Ratings'])
+        writer.writerow(["Rating", "Beer Name", "Price", "Abv", "URL", "Style", "Ratings"])
         if filterRating:
             for row in rowList:
                 try:
@@ -55,9 +55,9 @@ def writeCSV(writeFile, rowList, filterRating=False):
 #url = 'http://ifconfig.me' #Gets IP
 def get_data_from_ut(url, useProxy=False):
     try:
-        user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0'
-        user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36'
-        headers = {'User-Agent': user_agent}
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:74.0) Gecko/20100101 Firefox/74.0"
+        user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36"
+        headers = {"User-Agent": user_agent}
         # Make web request and don't verify SSL/TLS certs
         if useProxy:
             response = requests.get(url, headers=headers, verify=False, proxies=proxies)
@@ -66,16 +66,16 @@ def get_data_from_ut(url, useProxy=False):
         #return response.text
         return response
     except Exception as e:
-        print('[!]   ERROR - Untappd issue: {}'.format(str(e)))
+        print("[!]   ERROR - Untappd issue: {}".format(str(e)))
         exit(1)
 
 
 def parseLink(linkDescription):
-    linkDescription = linkDescription.strip('\n')
+    linkDescription = linkDescription.strip("\n")
     # Is the regex end of line and group 2 below necessary/wrong?
-    matchLimit = re.match(r'(.*)( - limit.*?) .*', linkDescription, re.M | re.I)  # remove ' - limit.*
-    matchLeft = re.match(r'(.*)( - [0-9]+ left.*?).*', linkDescription, re.M | re.I)  # remove ' - left.*
-    matchIce = re.match(r'(.*)( - .*ice.?pack.*?) .*', linkDescription, re.M | re.I)  # was picky
+    matchLimit = re.match(r"(.*)( - limit.*?) .*", linkDescription, re.M | re.I)  # remove ' - limit.*
+    matchLeft = re.match(r"(.*)( - [0-9]+ left.*?).*", linkDescription, re.M | re.I)  # remove ' - left.*
+    matchIce = re.match(r"(.*)( - .*ice.?pack.*?) .*", linkDescription, re.M | re.I)  # was picky
     if matchLimit:
         print("   Found regex Limit")
         linkDescription = matchLimit.group(1)
@@ -85,10 +85,10 @@ def parseLink(linkDescription):
     if matchIce:
         print("   Found regex Ice")
         linkDescription = matchIce.group(1)
-    if '$' not in linkDescription:
+    if "$" not in linkDescription:
         #linkDescription = False #TypeError: argument of type 'bool' is not iterable
         linkDescription = "Bad Link"
-    if 'unsubscribe' in linkDescription.lower():
+    if "unsubscribe" in linkDescription.lower():
         #linkDescription = False
         linkDescription = "Bad Link"
     return linkDescription
@@ -100,13 +100,13 @@ if compareCSV or outputCSV:
 if compareCSV:
     import os.path
     if not os.path.exists(oldCSV):
-        raise Exception(f'File not exist: {oldCSV}')
+        raise Exception(f"File not exist: {oldCSV}")
     oldCSVList = parseCSV(oldCSV)
 
 # Get all email links and their parents, written this way because parent.link
 #   can be duplicated and parent.string can be 3 different edge cases
-html_doc = BeautifulSoup(email, 'html.parser')
-allLinks = html_doc.findAll('a')  # len(allLinks) 308
+html_doc = BeautifulSoup(email, "html.parser")
+allLinks = html_doc.findAll("a")  # len(allLinks) 308
 allElems = len(allLinks) - 1
 linkTextList = []; columnList = []; total = 0; beername = ""
 foundInCSV = foundNAInCSV = foundPriceInCSV = webRequests = 0
@@ -132,7 +132,7 @@ for link in allLinks:
         print("     Bad Link, skipping")
         continue
     # Spaces optional (?) because DV sucks at formatting
-    beerEmailDescription = re.match(r'(.*)( ?- ?)(.*)', checkGoodLink, re.M | re.I)
+    beerEmailDescription = re.match(r"(.*)( ?- ?)(.*)", checkGoodLink, re.M | re.I)
     beername = beerEmailDescription.group(1)
     formatBeername = beername.strip()
     price = beerEmailDescription.group(3)
@@ -141,25 +141,25 @@ for link in allLinks:
         #NameList = [row["Beer Name"] for row in oldCSVList]
         # Each Element in oldCSVList[] is an OrderedDict
         for elem in oldCSVList:
-            if elem.get('Beer Name') == formatBeername:
-                print(f'   Name match {formatBeername}')
+            if elem.get("Beer Name") == formatBeername:
+                print(f"   Name match {formatBeername}")
                 foundInCSV += 1
-                csvRating = elem.get('Rating')
-                if csvRating == 'N/A':
+                csvRating = elem.get("Rating")
+                if csvRating == "N/A":
                     foundNAInCSV += 1
-                    print(f'        No CSV rating, looking up')
+                    print(f"        No CSV rating, looking up")
                     continue
-                csvName = elem.get('Beer Name')
-                csvPrice = elem.get('Price')
-                csvABV = elem.get('Abv')
-                csvURL = elem.get('URL')
-                csvStyle = elem.get('Style')
-                csvRatings = elem.get('Ratings')
+                csvName = elem.get("Beer Name")
+                csvPrice = elem.get("Price")
+                csvABV = elem.get("Abv")
+                csvURL = elem.get("URL")
+                csvStyle = elem.get("Style")
+                csvRatings = elem.get("Ratings")
                 if formatPrice == csvPrice:
                     foundPriceInCSV += 1
                     itemList = [csvRating, csvName, csvPrice, csvABV, csvURL, csvStyle, csvRatings]
                 else:
-                    print(f'        Price difference email: {formatPrice} csv: {csvPrice}')
+                    print(f"        Price difference email: {formatPrice} csv: {csvPrice}")
                     itemList = [csvRating, csvName, formatPrice, csvABV, csvURL, csvStyle, csvRatings]
                 columnList.append(itemList)
                 csvAddedRecord = True
@@ -170,25 +170,25 @@ for link in allLinks:
     time.sleep(random.uniform(sleepMin, sleepMax))  # Throttle requests, uniform vs randint for floating numbers
     #resp = get_data_from_ut(link['href'])  # not itemList[0]
     if useProxy:
-        resp = get_data_from_ut(link['href'], useProxy=True)
+        resp = get_data_from_ut(link["href"], useProxy=True)
     else:
-        resp = get_data_from_ut(link['href'])
+        resp = get_data_from_ut(link["href"])
     webRequests += 1
     #? Replace with resp.raise_for_status()
     if resp.status_code != 200:
         print("No 200 error")
         break
-    resp_doc = BeautifulSoup(resp.text, 'html.parser')
+    resp_doc = BeautifulSoup(resp.text, "html.parser")
     rating = resp_doc.find("span", {"class": "num"}).text  # '(4.67)'
-    formatRating = rating.strip('()')
+    formatRating = rating.strip("()")
     abv = resp_doc.find("p", {"class": "abv"}).text
-    formatAbv = abv.strip('\nABV ')
+    formatAbv = abv.strip("\nABV ")
     raters = resp_doc.find("p", {"class": "raters"}).text
-    formatRaters = raters.strip('\nRatings ')
+    formatRaters = raters.strip("\nRatings ")
     style = resp_doc.find("p", {"class": "style"}).text
     # Put CSV: Rating, Name, Price, Abv, URL, Style, Ratings Count
     itemList = [formatRating, formatBeername, formatPrice, formatAbv, resp.url, style, formatRaters]
-    print(f'   New: Name: {formatBeername} Rating: {formatRating}')
+    print(f"   New: Name: {formatBeername} Rating: {formatRating}")
     columnList.append(itemList)
 
 totalNewCSVRows = filteredRows = 0
@@ -216,6 +216,6 @@ if outputCSV:
     if filterRating:
         writeCSV(filteredCSV, columnList, filterRating=True)
 
-print(f'Found in Previous CSV:')
-print(f'   Name: {foundInCSV} Price: {foundPriceInCSV} N/A Rating: {foundNAInCSV} ')
-print(f'Total: Rows: {len(columnList)} Filtered: {filteredRows} Web Calls: {webRequests}')
+print(f"Found in Previous CSV:")
+print(f"   Name: {foundInCSV} Price: {foundPriceInCSV} N/A Rating: {foundNAInCSV}")
+print(f"Total: Rows: {len(columnList)} Filtered: {filteredRows} Web Calls: {webRequests}")
