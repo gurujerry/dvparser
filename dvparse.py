@@ -15,7 +15,7 @@ basedir = "/root/"
 justTest = False; maxTest = 10
 useProxy = True
 # Compares to previous CSV to reduce page lookups
-compareCSV = False; oldCSV = f'{basedir}oldfile.csv'
+compareCSV = False; newToCSV = False; oldCSV = f'{basedir}oldfile.csv'
 # Remove low ratings
 filterRating = True; minRating = 4.2
 outputCSV = True; newCSV = f'{basedir}{gmaildate}.csv'; filteredCSV = f'{basedir}{gmaildate}-filtered.csv'
@@ -49,7 +49,7 @@ def writeCSV(writeFile, rowList, filterRating=False):
                     pass
                 writer.writerow(row)
         else:
-            writer.writerows(columnList)
+            writer.writerows(fullColumnList)
 
 
 #url = 'http://ifconfig.me' #Gets IP
@@ -108,7 +108,7 @@ if compareCSV:
 html_doc = BeautifulSoup(email, 'html.parser')
 allLinks = html_doc.findAll('a')  # len(allLinks) 308
 allElems = len(allLinks) - 1
-linkTextList = []; columnList = []; total = 0; beername = ""
+linkTextList = []; fullColumnList = []; newItemList = []; total = 0; beername = ""
 foundInCSV = foundNAInCSV = foundPriceInCSV = webRequests = 0
 #for link in allLinks[195:315]:  #debugging
 for link in allLinks:
@@ -161,7 +161,7 @@ for link in allLinks:
                 else:
                     print(f'        Price difference email: {formatPrice} csv: {csvPrice}')
                     itemList = [csvRating, csvName, formatPrice, csvABV, csvURL, csvStyle, csvRatings]
-                columnList.append(itemList)
+                fullColumnList.append(itemList)
                 csvAddedRecord = True
         if csvAddedRecord:  # TODO: probably a better way continue an outer nested for loop
             continue
@@ -188,34 +188,43 @@ for link in allLinks:
     style = resp_doc.find("p", {"class": "style"}).text
     # Put CSV: Rating, Name, Price, Abv, URL, Style, Ratings Count
     itemList = [formatRating, formatBeername, formatPrice, formatAbv, resp.url, style, formatRaters]
+    if newToCSV:
+        newItemList.append(itemList)
     print(f'   New: Name: {formatBeername} Rating: {formatRating}')
-    columnList.append(itemList)
+    fullColumnList.append(itemList)
 
-totalNewCSVRows = filteredRows = 0
-for c in columnList:
-    if filterRating:
-        #print(f"Testing {c[0]}")
-        try:
-            rating = float(c[0])
-            if rating < minRating:
-                filteredRows += 1
-                continue
-        except ValueError:
-            pass
-            #print(f"    Can't convert to float {c[0]}")
-        # I hated the ugly regex below and replaced with float comparison above
-        #if re.match( r'^([0-3]|(4($|\.[0-1]))).*$', c[0] ):
-    if printRows:
-        if totalNewCSVRows == 0:
-            print('"Rating","Beer Name","Price","Abv","URL","Style","Ratings"')
+
+def printList(columnList):
+    filteredRows = 0
+    print('"Rating","Beer Name","Price","Abv","URL","Style","Ratings"')
+    for c in columnList:
+        if filterRating:
+            #print(f"Testing {c[0]}")
+            try:
+                rating = float(c[0])
+                if rating < minRating:
+                    filteredRows += 1
+                    continue
+            except ValueError:
+                pass
+                #print(f"    Can't convert to float {c[0]}")
+            # I hated the ugly regex below and replaced with float comparison above
+            #if re.match( r'^([0-3]|(4($|\.[0-1]))).*$', c[0] ):
         print(f'"{c[0]}","{c[1]}","{c[2]}","{c[3]}","{c[4]}","{c[5]}","{c[6]}"')
-    totalNewCSVRows += 1
+    return filteredRows
+
+
+if printRows:
+    totalFilteredRows = printList(fullColumnList) # Full list
+    print("NEW BEER LIST:")
+    filterRating = False
+    newFilteredRows = printList(newItemList) # Should be 0 because of above set to False
 
 if outputCSV:
-    writeCSV(newCSV, columnList)
+    writeCSV(newCSV, fullColumnList)
     if filterRating:
-        writeCSV(filteredCSV, columnList, filterRating=True)
+        writeCSV(filteredCSV, fullColumnList, filterRating=True)
 
-print(f'Found in Previous CSV:')
-print(f'   Name: {foundInCSV} Price: {foundPriceInCSV} N/A Rating: {foundNAInCSV} ')
-print(f'Total: Rows: {len(columnList)} Filtered: {filteredRows} Web Calls: {webRequests}')
+print(f'Total: Rows: {len(fullColumnList)} Filtered: {totalFilteredRows} Web Calls: {webRequests}')
+print(f'   Found in Previous CSV: Name: {foundInCSV} Price: {foundPriceInCSV} N/A Rating: {foundNAInCSV}')
+print(f'   New To CSV: {len(fullColumnList)} Filtered: {newFilteredRows}')
