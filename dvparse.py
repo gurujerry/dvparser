@@ -109,7 +109,7 @@ html_doc = BeautifulSoup(email, 'html.parser')
 allLinks = html_doc.findAll('a')  # len(allLinks) 308
 allElems = len(allLinks) - 1
 linkTextList = []; fullColumnList = []; newItemList = []; total = 0; beername = ""
-foundInCSV = foundNAInCSV = foundPriceInCSV = webRequests = 0
+foundInCSV = foundNAInCSV = foundPriceInCSV = webRequests = totalFilteredRows = 0
 #for link in allLinks[195:315]:  #debugging
 for link in allLinks:
     itemList = []; csvAddedRecord = False
