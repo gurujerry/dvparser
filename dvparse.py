@@ -227,4 +227,4 @@ if outputCSV:
 
 print(f'Total: Rows: {len(fullColumnList)} Filtered: {totalFilteredRows} Web Calls: {webRequests}')
 print(f'   Found in Previous CSV: Name: {foundInCSV} Price: {foundPriceInCSV} N/A Rating: {foundNAInCSV}')
-print(f'   New To CSV: {len(fullColumnList)} Filtered: {newFilteredRows}')
+print(f'   New To CSV: {len(newItemList)} Filtered: {newFilteredRows}')
